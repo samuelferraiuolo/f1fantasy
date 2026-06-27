@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Apex | F1 Cinematic Experience</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@200;900&display=swap');
+        
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #030303;
+            overflow: hidden; /* Niente barre di scorrimento, puro fullscreen */
+            font-family: 'Montserrat', sans-serif;
+            cursor: crosshair; /* Cursore tecnico */
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Effetto vignettatura per scurire i bordi come in un film */
+        .vignette {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            box-shadow: inset 0 0 200px rgba(0,0,0,0.9);
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+            text-align: center;
+        }
+
+        .title {
+            color: #ffffff;
+            font-size: 6vw;
+            font-weight: 900;
+            letter-spacing: 15px;
+            text-transform: uppercase;
+            margin: 0;
+            opacity: 0;
+            text-shadow: 0 0 30px rgba(255, 40, 0, 0.4);
+            transform: translateY(30px);
+        }
+
+        .subtitle {
+            color: #ff2800; /* Rosso Corsa */
+            font-size: 1.5vw;
+            font-weight: 200;
+            letter-spacing: 8px;
+            margin-top: 10px;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .drivers {
+            color: #888888;
+            font-size: 1vw;
+            font-weight: 200;
+            letter-spacing: 4px;
+            margin-top: 40px;
+            opacity: 0;
+            border-top: 1px solid rgba(255, 40, 0, 0.3);
+            padding-top: 20px;
+        }
+
+        .drivers span {
+            color: #ffffff;
+            font-weight: 900;
+        }
+        
+        .instruction {
+            position: absolute;
+            bottom: 40px;
+            color: rgba(255,255,255,0.3);
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.8; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+    <div class="vignette"></div>
+    
+    <div id="ui-layer">
+        <h1 class="title">SCUDERIA</h1>
+        <h2 class="subtitle">L'AERODINAMICA PERFETTA</h2>
+        <div class="drivers">IL LEGAME DELLA VELOCITÀ &nbsp;|&nbsp; <span>CHARLES LECLERC</span> &nbsp;//&nbsp; <span>LEWIS HAMILTON</span></div>
+        <div class="instruction">MUOVI IL CURSORE PER CONTROLLARE IL FLUSSO</div>
+    </div>
+
+    <script>
+        // === 1. IMPOSTAZIONI SCENA 3D ===
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        
+        // Aggiungiamo un leggero effetto nebbia rossa in lontananza
+        scene.fog = new THREE.FogExp2(0x030303, 0.0015);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+        camera.position.z = 400;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        container.appendChild(renderer.domElement);
+
+        // === 2. CREAZIONE DEL FLUSSO AERODINAMICO (Scintille / Vento) ===
+        const particleCount = 8000;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const velocities = [];
+
+        for (let i = 0; i < particleCount; i++) {
+            // Posizioni casuali in un tunnel 3D
+            positions[i * 3] = (Math.random() - 0.5) * 2000;     // X
+            positions[i * 3 + 1] = (Math.random() - 0.5) * 1000; // Y
+            positions[i * 3 + 2] = (Math.random() - 0.5) * 2000; // Z
+
+            // Velocità casuale verso la telecamera (Effetto warp)
+            velocities.push({
+                z: Math.random() * 8 + 2
+            });
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+        // Materiale delle particelle (Rosso Ferrari e Arancione Scintilla)
+        const material = new THREE.PointsMaterial({
+            color: 0xff2800,
+            size: 2.5,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending // Fa brillare le particelle quando si sovrappongono
+        });
+
+        const particles = new THREE.Points(geometry, material);
+        scene.add(particles);
+
+        // === 3. INTERATTIVITÀ DEL CURSORE (Head Tracking Falso) ===
+        let mouseX = 0;
+        let mouseY = 0;
+        let targetX = 0;
+        let targetY = 0;
+
+        const windowHalfX = window.innerWidth / 2;
+        const windowHalfY = window.innerHeight / 2;
+
+        document.addEventListener('mousemove', (event) => {
+            mouseX = (event.clientX - windowHalfX);
+            mouseY = (event.clientY - windowHalfY);
+        });
+
+        // Adattamento al ridimensionamento della finestra
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // === 4. LOOP DI ANIMAZIONE 3D ===
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Effetto Parallasse fluido (La telecamera segue il mouse con inerzia)
+            targetX = mouseX * 0.5;
+            targetY = mouseY * 0.5;
+            camera.position.x += (targetX - camera.position.x) * 0.05;
+            camera.position.y += (-targetY - camera.position.y) * 0.05;
+            camera.lookAt(scene.position);
+
+            // Anima le particelle verso lo schermo
+            const positions = particles.geometry.attributes.position.array;
+            for (let i = 0; i < particleCount; i++) {
+                // Muove la particella sull'asse Z
+                positions[i * 3 + 2] += velocities[i].z;
+
+                // Se la particella supera la telecamera, rinasce in fondo al tunnel
+                if (positions[i * 3 + 2] > 500) {
+                    positions[i * 3 + 2] = -1500;
+                    // Variazione leggera su X e Y per simulare turbolenza
+                    positions[i * 3] = (Math.random() - 0.5) * 2000;
+                }
+            }
+            particles.geometry.attributes.position.needsUpdate = true;
+
+            // Torsione del tunnel legata al mouse per simulare la forza G in curva
+            particles.rotation.z += 0.001 + (mouseX * 0.00001);
+
+            renderer.render(scene, camera);
+        }
+        
+        animate();
+
+        // === 5. REGIA CINEMATOGRAFICA (GSAP) ===
+        // Fa apparire i testi come nei trailer cinematografici
+        window.onload = () => {
+            const tl = gsap.timeline();
+            
+            tl.to('.title', {
+                opacity: 1,
+                y: 0,
+                duration: 2.5,
+                ease: "power4.out",
+                delay: 0.5
+            })
+            .to('.subtitle', {
+                opacity: 1,
+                y: 0,
+                duration: 2,
+                ease: "power3.out"
+            }, "-=1.5")
+            .to('.drivers', {
+                opacity: 1,
+                duration: 2,
+                ease: "power2.out"
+            }, "-=1");
+        };
+    </script>
+</body>
+</html>
