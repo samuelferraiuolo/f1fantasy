@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LA LEGGENDA | Scuderia Ferrari · Il Circuito del Tempo</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;600&display=swap');
+
+  :root{
+    --black-track:#030303;
+    --carbon:#0d0d0f;
+    --carbon2:#141416;
+    --rosso:#ff1801;
+    --rosso-dim:#7a1608;
+    --giallo:#ffc72c;
+    --titanio:#8b8b8f;
+    --bianco:#f5f5f2;
+  }
+  *{ box-sizing:border-box; }
+  html,body{
+    margin:0; padding:0; width:100%; height:100%;
+    background:var(--black-track); color:var(--bianco);
+    font-family:'Oswald', sans-serif; overflow:hidden;
+  }
+
+  .ambient{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:
+      radial-gradient(ellipse 60% 40% at 20% 15%, rgba(255,24,1,.10), transparent 60%),
+      radial-gradient(ellipse 50% 40% at 85% 85%, rgba(255,199,44,.06), transparent 60%);
+    animation:drift 18s ease-in-out infinite alternate;
+  }
+  @keyframes drift{ 0%{ background-position:0 0,0 0; } 100%{ background-position:40px 20px, -30px -20px; } }
+
+  .grain{
+    position:fixed; inset:0; z-index:1; pointer-events:none; opacity:.045; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .scanline{
+    position:fixed; inset:0; z-index:1; pointer-events:none; opacity:.35;
+    background:repeating-linear-gradient(to bottom, rgba(255,255,255,.02) 0px, rgba(255,255,255,.02) 1px, transparent 2px, transparent 3px);
+  }
+  .vignette{
+    position:fixed; inset:0; z-index:2; pointer-events:none;
+    box-shadow: inset 0 0 12vw 2vw rgba(0,0,0,.9);
+  }
+
+  #arrival{
+    position:fixed; inset:0; z-index:200; background:var(--bianco); pointer-events:none;
+  }
+
+  /* ---------- HEADER ---------- */
+  header{
+    position:fixed; top:0; left:0; right:0; z-index:20;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:30px 44px;
+  }
+  .logo{
+    font-family:'Anton', sans-serif; font-size:1rem; letter-spacing:2px; color:var(--bianco);
+    text-decoration:none;
+  }
+  .logo span{ color:var(--rosso); }
+  nav.top-nav{ display:flex; gap:30px; font-family:'JetBrains Mono', monospace; font-size:.68rem; letter-spacing:3px; }
+  nav.top-nav a{ color:var(--titanio); text-decoration:none; position:relative; transition:color .3s; }
+  nav.top-nav a:hover{ color:var(--bianco); }
+  nav.top-nav a.active{ color:var(--rosso); }
+  nav.top-nav a::after{ content:''; position:absolute; left:0; bottom:-4px; width:0; height:1px; background:var(--rosso); transition:width .3s; }
+  nav.top-nav a:hover::after{ width:100%; }
+
+  /* ---------- HERO / TITLE BLOCK ---------- */
+  .page-head{
+    position:fixed; top:110px; left:0; right:0; z-index:15;
+    text-align:center; pointer-events:none;
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace; color:var(--titanio); font-size:.7rem; letter-spacing:6px;
+  }
+  .eyebrow span{ color:var(--giallo); }
+  h1.page-title{
+    font-family:'Anton', sans-serif; font-size:clamp(2.2rem, 5vw, 3.6rem); letter-spacing:8px; margin:10px 0 0;
+    text-shadow:0 0 30px rgba(255,24,1,.3);
+  }
+
+  /* ---------- TRACK VIEWPORT ---------- */
+  .track-viewport{
+    position:absolute; top:0; left:0; right:0; bottom:0;
+    display:flex; align-items:center; z-index:10;
+    overflow:hidden;
+  }
+  #track-canvas{
+    position:relative;
+    transition:none;
+  }
+
+  .node-halo{ animation:halo 2.4s ease-in-out infinite; transform-origin:center; }
+  @keyframes halo{ 0%,100%{ opacity:.25; r:16; } 50%{ opacity:.55; r:22; } }
+
+  .card{
+    width:270px;
+    background:linear-gradient(160deg, var(--carbon2), var(--carbon));
+    border:1px solid rgba(255,24,1,.25);
+    border-radius:2px;
+    padding:16px 18px;
+    font-family:'Oswald', sans-serif;
+    opacity:.32;
+    transform:scale(.92);
+    transition:opacity .5s ease, transform .5s ease, border-color .5s ease;
+    cursor:pointer;
+    pointer-events:auto;
+  }
+  .card.active{
+    opacity:1; transform:scale(1);
+    border-color:rgba(255,24,1,.7);
+    box-shadow:0 0 40px rgba(255,24,1,.18);
+  }
+  .card .year{
+    font-family:'JetBrains Mono', monospace; color:var(--giallo); font-size:.72rem; letter-spacing:2px;
+  }
+  .card h3{
+    font-family:'Oswald', sans-serif; font-weight:600; font-size:1.05rem; letter-spacing:1px;
+    margin:6px 0 8px; color:var(--bianco); text-transform:uppercase;
+  }
+  .card p{
+    font-size:.82rem; line-height:1.5; color:var(--titanio); margin:0; font-weight:300;
+  }
+
+  .stem{ stroke:rgba(255,24,1,.35); stroke-width:2; }
+
+  /* ---------- CONTROLS ---------- */
+  .controls{
+    position:fixed; bottom:36px; left:0; right:0; z-index:20;
+    display:flex; align-items:center; justify-content:center; gap:26px;
+  }
+  .paddle{
+    width:52px; height:52px; border-radius:50%;
+    border:1px solid rgba(255,245,242,.25); background:rgba(13,13,15,.6);
+    backdrop-filter:blur(6px);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; transition:all .25s; color:var(--bianco);
+  }
+  .paddle:hover:not(.disabled){ background:var(--rosso); border-color:var(--rosso); transform:scale(1.08); }
+  .paddle.disabled{ opacity:.25; cursor:default; }
+  .paddle svg{ width:18px; height:18px; }
+
+  .lap-counter{
+    font-family:'JetBrains Mono', monospace; font-size:.75rem; letter-spacing:4px; color:var(--titanio);
+    min-width:150px; text-align:center;
+  }
+  .lap-counter b{ color:var(--bianco); }
+
+  .progress-track{
+    position:fixed; bottom:16px; left:50%; transform:translateX(-50%); z-index:20;
+    width:280px; height:2px; background:rgba(255,255,255,.1);
+  }
+  .progress-fill{ height:100%; background:var(--rosso); width:0%; box-shadow:0 0 10px var(--rosso); }
+
+  .hint{
+    position:fixed; bottom:96px; left:0; right:0; text-align:center; z-index:20;
+    font-family:'JetBrains Mono', monospace; font-size:.62rem; letter-spacing:2px; color:rgba(139,139,143,.6);
+  }
+</style>
+</head>
+<body>
+
+<div id="arrival"></div>
+<div class="ambient"></div>
+<div class="grain"></div>
+<div class="scanline"></div>
+<div class="vignette"></div>
+
+<header>
+  <a href="index.html" class="logo">SF<span>90</span> · GARAGE</a>
+  <nav class="top-nav">
+    <a href="leggenda.html" class="active">LA LEGGENDA</a>
+    <a href="piloti.html">I PILOTI</a>
+  </nav>
+</header>
+
+<div class="page-head">
+  <div class="eyebrow">IL CIRCUITO DEL TEMPO <span>·</span> 1929 → OGGI</div>
+  <h1 class="page-title">LA LEGGENDA</h1>
+</div>
+
+<div class="track-viewport">
+  <div id="track-canvas"></div>
+</div>
+
+<div class="hint">CLICCA SU UNA CURVA PER SALTARE DIRETTAMENTE, OPPURE USA I COMANDI O LE FRECCE</div>
+
+<div class="controls">
+  <div class="paddle" id="prevBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+  </div>
+  <div class="lap-counter">CURVA <b id="lapNow">01</b> / <span id="lapTotal">10</span></div>
+  <div class="paddle" id="nextBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+  </div>
+</div>
+<div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<script>
+/* ============ ARRIVAL FLASH ============ */
+gsap.to('#arrival', {opacity:0, duration:.7, ease:'power2.out', delay:.05, onComplete:()=>{ document.getElementById('arrival').style.display='none'; }});
+gsap.from('.track-viewport, .page-head', {opacity:0, y:14, duration:1, ease:'power2.out', delay:.15});
+
+/* ============ DATA ============ */
+const stops = [
+  {year:'1929', title:'La Fondazione', text:"Enzo Ferrari fonda a Modena la Scuderia Ferrari, che corre inizialmente al volante di vetture Alfa Romeo."},
+  {year:'1947', title:'La Prima Vettura', text:'Debutta la 125 S: la prima automobile a marchiare il Cavallino Rampante scende finalmente in pista.'},
+  {year:'1950', title:'Debutto in F1', text:'La Scuderia si iscrive alla primissima stagione del Campionato del Mondo di Formula 1.'},
+  {year:'1952–53', title:'Ascari Campione', text:'Alberto Ascari conquista i primi due titoli piloti della storia per il Cavallino.'},
+  {year:'1975–77', title:"L'Era Lauda", text:'Niki Lauda riporta il titolo a Maranello, guidando la rinascita tecnica della squadra.'},
+  {year:'1979', title:'Scheckter', text:'Jody Scheckter vince un titolo che resterà, per oltre vent’anni, l’ultimo per la Ferrari.'},
+  {year:'2000–04', title:'La Dinastia', text:'Michael Schumacher, Ross Brawn e Jean Todt costruiscono cinque titoli piloti consecutivi.'},
+  {year:'2007', title:'Räikkönen', text:'Kimi Räikkönen riporta il titolo iridato a Maranello in un finale di stagione al cardiopalma.'},
+  {year:'2019–24', title:'L’Ascesa di Leclerc', text:'Charles Leclerc emerge come nuovo punto di riferimento della squadra, tra podi e pole memorabili.'},
+  {year:'2025–26', title:'Hamilton Veste il Rosso', text:'Lewis Hamilton, sette volte campione del mondo, si unisce a Leclerc: a Silverstone arriva la 250ª vittoria della Scuderia in Formula 1.'}
+];
+
+/* ============ BUILD TRACK GEOMETRY ============ */
+const VB_W = stops.length * 430 + 300;
+const VB_H = 640;
+const baseline = 320;
+
+const points = stops.map((s,i)=>({
+  x: 260 + i*430,
+  y: baseline + Math.sin(i*1.15)*46
+}));
+
+function catmullRom2bezier(pts){
+  let d = `M ${pts[0].x},${pts[0].y} `;
+  for(let i=0;i<pts.length-1;i++){
+    const p0 = pts[i-1] || pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i+1];
+    const p3 = pts[i+2] || p2;
+    const c1x = p1.x + (p2.x - p0.x)/6;
+    const c1y = p1.y + (p2.y - p0.y)/6;
+    const c2x = p2.x - (p3.x - p1.x)/6;
+    const c2y = p2.y - (p3.y - p1.y)/6;
+    d += `C ${c1x},${c1y} ${c2x},${c2y} ${p2.x},${p2.y} `;
+  }
+  return d;
+}
+const pathD = catmullRom2bezier(points);
+
+const svgNS = 'http://www.w3.org/2000/svg';
+const xhtmlNS = 'http://www.w3.org/1999/xhtml';
+
+const svg = document.createElementNS(svgNS,'svg');
+svg.setAttribute('viewBox', `0 0 ${VB_W} ${VB_H}`);
+svg.setAttribute('width', VB_W);
+svg.setAttribute('height', VB_H);
+document.getElementById('track-canvas').appendChild(svg);
+
+// defs: gradient + glow filter
+svg.innerHTML = `
+  <defs>
+    <linearGradient id="trackGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#7a1608"/>
+      <stop offset="50%" stop-color="#ff1801"/>
+      <stop offset="100%" stop-color="#ffc72c"/>
+    </linearGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+`;
+
+const trackBg = document.createElementNS(svgNS,'path');
+trackBg.setAttribute('d', pathD);
+trackBg.setAttribute('fill','none');
+trackBg.setAttribute('stroke','rgba(255,255,255,0.06)');
+trackBg.setAttribute('stroke-width','26');
+trackBg.setAttribute('stroke-linecap','round');
+svg.appendChild(trackBg);
+
+const trackPath = document.createElementNS(svgNS,'path');
+trackPath.setAttribute('id','trackPath');
+trackPath.setAttribute('d', pathD);
+trackPath.setAttribute('fill','none');
+trackPath.setAttribute('stroke','url(#trackGrad)');
+trackPath.setAttribute('stroke-width','4');
+trackPath.setAttribute('stroke-linecap','round');
+trackPath.setAttribute('opacity','0.85');
+svg.appendChild(trackPath);
+
+// stems + nodes + cards
+const cardEls = [];
+points.forEach((p,i)=>{
+  const side = i % 2 === 0 ? 'above' : 'below';
+
+  const stem = document.createElementNS(svgNS,'line');
+  const stemLen = 90;
+  stem.setAttribute('x1', p.x); stem.setAttribute('y1', p.y);
+  stem.setAttribute('x2', p.x); stem.setAttribute('y2', side==='above' ? p.y - stemLen : p.y + stemLen);
+  stem.setAttribute('class','stem');
+  svg.appendChild(stem);
+
+  const halo = document.createElementNS(svgNS,'circle');
+  halo.setAttribute('cx', p.x); halo.setAttribute('cy', p.y); halo.setAttribute('r', 16);
+  halo.setAttribute('fill', 'rgba(255,24,1,0.35)');
+  halo.setAttribute('class','node-halo');
+  halo.style.animationDelay = (i*0.15)+'s';
+  svg.appendChild(halo);
+
+  const node = document.createElementNS(svgNS,'circle');
+  node.setAttribute('cx', p.x); node.setAttribute('cy', p.y); node.setAttribute('r', 8);
+  node.setAttribute('fill', i===0 ? '#ffc72c' : '#ff1801');
+  node.setAttribute('stroke', '#f5f5f2');
+  node.setAttribute('stroke-width', '1.5');
+  node.style.cursor = 'pointer';
+  node.addEventListener('click', ()=> goTo(i));
+  svg.appendChild(node);
+
+  const fo = document.createElementNS(svgNS,'foreignObject');
+  const cardW = 270, cardH = 170;
+  fo.setAttribute('x', p.x - cardW/2);
+  fo.setAttribute('y', side==='above' ? p.y - stemLen - cardH - 6 : p.y + stemLen + 6);
+  fo.setAttribute('width', cardW);
+  fo.setAttribute('height', cardH);
+
+  const div = document.createElement('div');
+  div.setAttribute('xmlns', xhtmlNS);
+  div.className = 'card';
+  div.innerHTML = `<div class="year">CURVA ${String(i+1).padStart(2,'0')} · ${stops[i].year}</div><h3>${stops[i].title}</h3><p>${stops[i].text}</p>`;
+  div.addEventListener('click', ()=> goTo(i));
+  fo.appendChild(div);
+  svg.appendChild(fo);
+  cardEls.push(div);
+});
+
+// glowing marker (the "car" on track)
+const marker = document.createElementNS(svgNS,'circle');
+marker.setAttribute('r', 10);
+marker.setAttribute('fill', '#fff');
+marker.setAttribute('filter', 'url(#glow)');
+svg.appendChild(marker);
+
+/* ============ MARKER PATH MAPPING ============ */
+const pathLen = trackPath.getTotalLength();
+const SAMPLES = 3000;
+const sampled = [];
+for(let i=0;i<=SAMPLES;i++){
+  const len = (i/SAMPLES)*pathLen;
+  sampled.push({len, pt: trackPath.getPointAtLength(len)});
+}
+function closestLenTo(target){
+  let best = 0, bestD = Infinity;
+  for(const s of sampled){
+    const dx = s.pt.x-target.x, dy = s.pt.y-target.y;
+    const d = dx*dx+dy*dy;
+    if(d<bestD){ bestD=d; best=s.len; }
+  }
+  return best;
+}
+const lenAtNode = points.map(p => closestLenTo(p));
+
+marker.setAttribute('cx', points[0].x);
+marker.setAttribute('cy', points[0].y);
+
+/* ============ NAVIGATION STATE ============ */
+let current = 0;
+const total = stops.length;
+const viewport = document.querySelector('.track-viewport');
+const canvasEl = document.getElementById('track-canvas');
+
+function viewportWidthPx(){ return viewport.clientWidth; }
+
+function panTo(idx, animate=true){
+  const targetX = points[idx].x;
+  const vw = viewportWidthPx();
+  let tx = vw/2 - targetX;
+  const minTx = vw - VB_W;
+  tx = Math.min(0, Math.max(minTx, tx));
+
+  if(animate){
+    gsap.to(canvasEl, {x: tx, duration:.9, ease:'power3.inOut'});
+  } else {
+    gsap.set(canvasEl, {x: tx});
+  }
+}
+
+let markerLen = lenAtNode[0];
+function animateMarkerTo(idx){
+  const target = lenAtNode[idx];
+  gsap.to({v: markerLen}, {
+    v: target, duration:.9, ease:'power3.inOut',
+    onUpdate: function(){
+      markerLen = this.targets()[0].v;
+      const pt = trackPath.getPointAtLength(markerLen);
+      marker.setAttribute('cx', pt.x);
+      marker.setAttribute('cy', pt.y);
+    }
+  });
+}
+
+function updateUI(){
+  cardEls.forEach((el,i)=> el.classList.toggle('active', i===current));
+  document.getElementById('lapNow').textContent = String(current+1).padStart(2,'0');
+  document.getElementById('progressFill').style.width = (current/(total-1)*100)+'%';
+  document.getElementById('prevBtn').classList.toggle('disabled', current===0);
+  document.getElementById('nextBtn').classList.toggle('disabled', current===total-1);
+
+  // subtle corner-exit "G-force" tilt on the whole SVG
+  gsap.fromTo(canvasEl, {rotate: current % 2===0 ? -0.6 : 0.6}, {rotate:0, duration:.7, ease:'power2.out'});
+}
+
+function goTo(idx){
+  idx = Math.max(0, Math.min(total-1, idx));
+  current = idx;
+  panTo(idx);
+  animateMarkerTo(idx);
+  updateUI();
+}
+
+document.getElementById('prevBtn').addEventListener('click', ()=> goTo(current-1));
+document.getElementById('nextBtn').addEventListener('click', ()=> goTo(current+1));
+document.addEventListener('keydown', (e)=>{
+  if(e.key==='ArrowRight') goTo(current+1);
+  if(e.key==='ArrowLeft') goTo(current-1);
+});
+
+window.addEventListener('resize', ()=> panTo(current, false));
+
+// initial layout
+requestAnimationFrame(()=>{ panTo(0, false); updateUI(); });
+</script>
+</body>
+</html>

@@ -1,255 +1,412 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Apex | F1 Cinematic Experience</title>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@200;900&display=swap');
-        
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #030303;
-            overflow: hidden; /* Niente barre di scorrimento, puro fullscreen */
-            font-family: 'Montserrat', sans-serif;
-            cursor: crosshair; /* Cursore tecnico */
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IL MITO | Scuderia Ferrari · Formula 1</title>
 
-        #canvas-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-        }
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
-        /* Effetto vignettatura per scurire i bordi come in un film */
-        .vignette {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            box-shadow: inset 0 0 200px rgba(0,0,0,0.9);
-            z-index: 2;
-            pointer-events: none;
-        }
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@300;500;600&family=JetBrains+Mono:wght@300;400;600&display=swap');
 
-        #ui-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 3;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            pointer-events: none;
-            text-align: center;
-        }
+  :root{
+    --black-track:#030303;
+    --carbon:#0d0d0f;
+    --rosso:#ff1801;
+    --rosso-dim:#7a1608;
+    --giallo:#ffc72c;
+    --titanio:#8b8b8f;
+    --bianco:#f5f5f2;
+  }
 
-        .title {
-            color: #ffffff;
-            font-size: 6vw;
-            font-weight: 900;
-            letter-spacing: 15px;
-            text-transform: uppercase;
-            margin: 0;
-            opacity: 0;
-            text-shadow: 0 0 30px rgba(255, 40, 0, 0.4);
-            transform: translateY(30px);
-        }
+  *{ box-sizing:border-box; }
 
-        .subtitle {
-            color: #ff2800; /* Rosso Corsa */
-            font-size: 1.5vw;
-            font-weight: 200;
-            letter-spacing: 8px;
-            margin-top: 10px;
-            opacity: 0;
-            transform: translateY(20px);
-        }
+  html,body{
+    margin:0; padding:0; width:100%; height:100%;
+    background:var(--black-track);
+    overflow:hidden;
+    font-family:'Oswald', sans-serif;
+    cursor:pointer;
+  }
 
-        .drivers {
-            color: #888888;
-            font-size: 1vw;
-            font-weight: 200;
-            letter-spacing: 4px;
-            margin-top: 40px;
-            opacity: 0;
-            border-top: 1px solid rgba(255, 40, 0, 0.3);
-            padding-top: 20px;
-        }
+  #canvas-container{ position:absolute; inset:0; z-index:1; }
 
-        .drivers span {
-            color: #ffffff;
-            font-weight: 900;
-        }
-        
-        .instruction {
-            position: absolute;
-            bottom: 40px;
-            color: rgba(255,255,255,0.3);
-            font-size: 0.8rem;
-            letter-spacing: 2px;
-            animation: pulse 2s infinite;
-        }
+  .grain{
+    position:absolute; inset:0; z-index:2; pointer-events:none;
+    opacity:.05; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 0.3; }
-            50% { opacity: 0.8; }
-        }
-    </style>
+  .vignette{
+    position:absolute; inset:0; z-index:3; pointer-events:none;
+    box-shadow: inset 0 0 12vw 2vw rgba(0,0,0,.95);
+  }
+
+  .scanline{
+    position:absolute; inset:0; z-index:4; pointer-events:none; opacity:.4;
+    background:repeating-linear-gradient(to bottom, rgba(255,255,255,.02) 0px, rgba(255,255,255,.02) 1px, transparent 2px, transparent 3px);
+  }
+
+  /* ---------- BOOT SEQUENCE ---------- */
+  #boot{
+    position:absolute; inset:0; z-index:50;
+    background:var(--black-track);
+    display:flex; align-items:center; justify-content:center;
+    flex-direction:column;
+  }
+  #boot .line{
+    font-family:'JetBrains Mono', monospace;
+    color:var(--rosso);
+    font-size:.8rem;
+    letter-spacing:3px;
+    opacity:0;
+    margin:3px 0;
+  }
+  #boot .bar-wrap{
+    width:280px; height:2px; background:rgba(255,255,255,.1); margin-top:24px; overflow:hidden;
+  }
+  #boot .bar{ width:0%; height:100%; background:var(--rosso); box-shadow:0 0 12px var(--rosso); }
+
+  /* ---------- UI LAYER ---------- */
+  #ui-layer{
+    position:absolute; inset:0; z-index:10;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; pointer-events:none;
+  }
+
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    color:var(--titanio);
+    font-size:.7rem;
+    letter-spacing:6px;
+    opacity:0;
+    margin-bottom:22px;
+  }
+  .eyebrow span{ color:var(--giallo); }
+
+  .title{
+    font-family:'Anton', sans-serif;
+    color:var(--bianco);
+    font-size:clamp(3.2rem, 10vw, 8.5rem);
+    letter-spacing:14px;
+    margin:0;
+    opacity:0;
+    transform:translateY(30px);
+    text-shadow:0 0 40px rgba(255,24,1,.35);
+    line-height:.95;
+  }
+
+  .subtitle{
+    color:var(--rosso);
+    font-size:clamp(.85rem, 1.6vw, 1.3rem);
+    font-weight:300;
+    letter-spacing:8px;
+    margin-top:14px;
+    opacity:0;
+    transform:translateY(20px);
+    text-transform:uppercase;
+  }
+
+  .drivers{
+    color:var(--titanio);
+    font-family:'JetBrains Mono', monospace;
+    font-size:.72rem;
+    letter-spacing:3px;
+    margin-top:46px;
+    opacity:0;
+    border-top:1px solid rgba(255,24,1,.3);
+    padding-top:20px;
+  }
+  .drivers b{ color:var(--bianco); font-weight:600; }
+  .drivers .sep{ color:var(--rosso); margin:0 10px; }
+
+  .cta{
+    position:absolute; bottom:64px; left:50%; transform:translateX(-50%);
+    display:flex; flex-direction:column; align-items:center; gap:10px;
+    opacity:0; pointer-events:none;
+  }
+  .cta .label{
+    color:var(--bianco); font-size:.75rem; letter-spacing:5px; font-weight:500;
+  }
+  .cta .chevron{
+    width:16px; height:16px;
+    border-right:2px solid var(--rosso); border-bottom:2px solid var(--rosso);
+    transform:rotate(45deg);
+    animation:bounce 1.6s infinite;
+  }
+  @keyframes bounce{ 0%,100%{ transform:translateY(0) rotate(45deg); opacity:.4;} 50%{ transform:translateY(8px) rotate(45deg); opacity:1;} }
+
+  /* ---------- CORNER NAV ---------- */
+  .corner-nav{
+    position:absolute; top:34px; right:40px; z-index:20;
+    display:flex; gap:26px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:.68rem; letter-spacing:3px;
+    opacity:0;
+  }
+  .corner-nav a{
+    color:var(--titanio); text-decoration:none; position:relative;
+    transition:color .3s;
+    pointer-events:auto;
+  }
+  .corner-nav a:hover{ color:var(--bianco); }
+  .corner-nav a::after{
+    content:''; position:absolute; left:0; bottom:-4px; width:0; height:1px; background:var(--rosso);
+    transition:width .3s;
+  }
+  .corner-nav a:hover::after{ width:100%; }
+
+  .corner-mark{
+    position:absolute; top:34px; left:40px; z-index:20;
+    font-family:'Anton', sans-serif; color:var(--bianco); font-size:1rem; letter-spacing:2px;
+    opacity:0;
+  }
+  .corner-mark span{ color:var(--rosso); }
+
+  /* ---------- TRANSITION OVERLAY (hyperspace jump) ---------- */
+  #transition-overlay{
+    position:fixed; inset:0; z-index:100;
+    pointer-events:none; opacity:0;
+  }
+  #flash{ position:absolute; inset:0; background:var(--bianco); opacity:0; }
+  #blackout{ position:absolute; inset:0; background:#000; opacity:0; }
+
+  .car-rig{
+    position:absolute; top:50%; left:50%;
+    width:340px; height:110px;
+    transform:translate(-160%,-50%) scaleX(1);
+    opacity:0;
+  }
+  .car-rig svg{ width:100%; height:100%; display:block; filter:drop-shadow(0 0 22px rgba(255,24,1,.8)); }
+  .trail{
+    position:absolute; top:50%; left:0; height:3px; width:0;
+    background:linear-gradient(to right, transparent, var(--rosso), var(--giallo), transparent);
+    transform:translateY(-50%);
+    filter:blur(1px);
+  }
+
+  #canvas-container{ transition:filter .1s linear; }
+
+  ::selection{ background:var(--rosso); color:#fff; }
+</style>
 </head>
 <body>
 
-    <div id="canvas-container"></div>
-    <div class="vignette"></div>
-    
-    <div id="ui-layer">
-        <h1 class="title">SCUDERIA</h1>
-        <h2 class="subtitle">L'AERODINAMICA PERFETTA</h2>
-        <div class="drivers">IL LEGAME DELLA VELOCITÀ &nbsp;|&nbsp; <span>CHARLES LECLERC</span> &nbsp;//&nbsp; <span>LEWIS HAMILTON</span></div>
-        <div class="instruction">MUOVI IL CURSORE PER CONTROLLARE IL FLUSSO</div>
+  <div id="boot">
+    <div class="line" id="b1">SCUDERIA FERRARI — SISTEMA TELEMETRICO</div>
+    <div class="line" id="b2">CARICAMENTO MOTORE // OK</div>
+    <div class="line" id="b3">PRESSIONE PNEUMATICI // NOMINALE</div>
+    <div class="line" id="b4">AVVIO ESPERIENZA...</div>
+    <div class="bar-wrap"><div class="bar" id="bootbar"></div></div>
+  </div>
+
+  <div id="canvas-container"></div>
+  <div class="grain"></div>
+  <div class="vignette"></div>
+  <div class="scanline"></div>
+
+  <div class="corner-mark">SF<span>90</span></div>
+  <div class="corner-nav">
+    <a href="leggenda.html" data-dest="leggenda.html">LA LEGGENDA</a>
+    <a href="piloti.html" data-dest="piloti.html">I PILOTI</a>
+  </div>
+
+  <div id="ui-layer">
+    <div class="eyebrow">SCUDERIA FERRARI <span>·</span> DAL 1929 <span>·</span> MARANELLO, ITALIA</div>
+    <h1 class="title">IL MITO</h1>
+    <h2 class="subtitle">L'aerodinamica perfetta della velocità</h2>
+    <div class="drivers">STAGIONE 2026 <span class="sep">//</span> <b>CHARLES LECLERC</b> <span class="sep">//</span> <b>LEWIS HAMILTON</b></div>
+  </div>
+
+  <div class="cta">
+    <div class="label">ENTRA NELLA LEGGENDA</div>
+    <div class="chevron"></div>
+  </div>
+
+  <div id="transition-overlay">
+    <div class="trail" id="trail"></div>
+    <div class="car-rig" id="carRig">
+      <svg viewBox="0 0 340 110" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="60" cy="88" rx="22" ry="22" fill="#111"/>
+        <ellipse cx="266" cy="88" rx="22" ry="22" fill="#111"/>
+        <ellipse cx="60" cy="88" rx="10" ry="10" fill="#333"/>
+        <ellipse cx="266" cy="88" rx="10" ry="10" fill="#333"/>
+        <path d="M20 92 L40 60 L120 48 L150 30 L215 30 L245 50 L305 60 L320 92 L280 96 L100 96 Z" fill="#ff1801"/>
+        <path d="M120 48 L150 30 L215 30 L245 50 L215 58 L150 58 Z" fill="#1a1a1a"/>
+        <rect x="6" y="86" width="34" height="8" rx="3" fill="#ff1801"/>
+        <rect x="296" y="60" width="10" height="34" rx="2" fill="#111"/>
+        <rect x="296" y="55" width="34" height="8" rx="2" fill="#111"/>
+      </svg>
     </div>
+    <div id="flash"></div>
+    <div id="blackout"></div>
+  </div>
 
-    <script>
-        // === 1. IMPOSTAZIONI SCENA 3D ===
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        
-        // Aggiungiamo un leggero effetto nebbia rossa in lontananza
-        scene.fog = new THREE.FogExp2(0x030303, 0.0015);
+<script>
+/* ============ BOOT SEQUENCE ============ */
+const bootTl = gsap.timeline();
+bootTl.to('#b1', {opacity:1, duration:.25})
+  .to('#b1', {opacity:.3, duration:.2}, "+=.15")
+  .to('#b2', {opacity:1, duration:.25})
+  .to('#b2', {opacity:.3, duration:.2}, "+=.15")
+  .to('#b3', {opacity:1, duration:.25})
+  .to('#b3', {opacity:.3, duration:.2}, "+=.15")
+  .to('#b4', {opacity:1, duration:.25})
+  .to('#bootbar', {width:'100%', duration:.7, ease:'power2.inOut'}, "-=.1")
+  .to('#boot', {opacity:0, duration:.6, ease:'power2.inOut', delay:.2})
+  .set('#boot', {display:'none'})
+  .call(revealHero);
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-        camera.position.z = 400;
+/* ============ THREE.JS PARTICLE TUNNEL ============ */
+const container = document.getElementById('canvas-container');
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x030303, 0.0015);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
-        container.appendChild(renderer.domElement);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 2000);
+camera.position.z = 400;
 
-        // === 2. CREAZIONE DEL FLUSSO AERODINAMICO (Scintille / Vento) ===
-        const particleCount = 8000;
-        const geometry = new THREE.BufferGeometry();
-        const positions = new Float32Array(particleCount * 3);
-        const velocities = [];
+const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
+container.appendChild(renderer.domElement);
 
-        for (let i = 0; i < particleCount; i++) {
-            // Posizioni casuali in un tunnel 3D
-            positions[i * 3] = (Math.random() - 0.5) * 2000;     // X
-            positions[i * 3 + 1] = (Math.random() - 0.5) * 1000; // Y
-            positions[i * 3 + 2] = (Math.random() - 0.5) * 2000; // Z
+const particleCount = 8000;
+const geometry = new THREE.BufferGeometry();
+const positions = new Float32Array(particleCount*3);
+const velocities = [];
+const isGold = [];
 
-            // Velocità casuale verso la telecamera (Effetto warp)
-            velocities.push({
-                z: Math.random() * 8 + 2
-            });
-        }
+for(let i=0;i<particleCount;i++){
+  positions[i*3]   = (Math.random()-0.5)*2000;
+  positions[i*3+1] = (Math.random()-0.5)*1000;
+  positions[i*3+2] = (Math.random()-0.5)*2000;
+  velocities.push({z:Math.random()*8+2});
+  isGold.push(Math.random() < 0.08);
+}
+geometry.setAttribute('position', new THREE.BufferAttribute(positions,3));
 
-        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+const material = new THREE.PointsMaterial({
+  color:0xff1801, size:2.5, transparent:true, opacity:.8, blending:THREE.AdditiveBlending
+});
+const particles = new THREE.Points(geometry, material);
+scene.add(particles);
 
-        // Materiale delle particelle (Rosso Ferrari e Arancione Scintilla)
-        const material = new THREE.PointsMaterial({
-            color: 0xff2800,
-            size: 2.5,
-            transparent: true,
-            opacity: 0.8,
-            blending: THREE.AdditiveBlending // Fa brillare le particelle quando si sovrappongono
-        });
+// secondary gold particle layer for depth/variety
+const goldPositions = new Float32Array(600*3);
+for(let i=0;i<600;i++){
+  goldPositions[i*3]   = (Math.random()-0.5)*2000;
+  goldPositions[i*3+1] = (Math.random()-0.5)*1000;
+  goldPositions[i*3+2] = (Math.random()-0.5)*2000;
+}
+const goldGeo = new THREE.BufferGeometry();
+goldGeo.setAttribute('position', new THREE.BufferAttribute(goldPositions,3));
+const goldMat = new THREE.PointsMaterial({color:0xffc72c, size:3.2, transparent:true, opacity:.9, blending:THREE.AdditiveBlending});
+const goldParticles = new THREE.Points(goldGeo, goldMat);
+scene.add(goldParticles);
 
-        const particles = new THREE.Points(geometry, material);
-        scene.add(particles);
+let mouseX=0, mouseY=0, targetX=0, targetY=0;
+const windowHalfX = window.innerWidth/2, windowHalfY = window.innerHeight/2;
+document.addEventListener('mousemove', e=>{
+  mouseX = (e.clientX - windowHalfX);
+  mouseY = (e.clientY - windowHalfY);
+});
+window.addEventListener('resize', ()=>{
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
 
-        // === 3. INTERATTIVITÀ DEL CURSORE (Head Tracking Falso) ===
-        let mouseX = 0;
-        let mouseY = 0;
-        let targetX = 0;
-        let targetY = 0;
+let warp = 1; // multiplier used during hyperspace transition
 
-        const windowHalfX = window.innerWidth / 2;
-        const windowHalfY = window.innerHeight / 2;
+function animate(){
+  requestAnimationFrame(animate);
+  targetX = mouseX*0.5; targetY = mouseY*0.5;
+  camera.position.x += (targetX - camera.position.x)*0.05;
+  camera.position.y += (-targetY - camera.position.y)*0.05;
+  camera.lookAt(scene.position);
 
-        document.addEventListener('mousemove', (event) => {
-            mouseX = (event.clientX - windowHalfX);
-            mouseY = (event.clientY - windowHalfY);
-        });
+  const pos = particles.geometry.attributes.position.array;
+  for(let i=0;i<particleCount;i++){
+    pos[i*3+2] += velocities[i].z * warp;
+    if(pos[i*3+2] > 500){
+      pos[i*3+2] = -1500;
+      pos[i*3] = (Math.random()-0.5)*2000;
+    }
+  }
+  particles.geometry.attributes.position.needsUpdate = true;
 
-        // Adattamento al ridimensionamento della finestra
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+  const gpos = goldParticles.geometry.attributes.position.array;
+  for(let i=0;i<600;i++){
+    gpos[i*3+2] += (3*warp);
+    if(gpos[i*3+2] > 500){ gpos[i*3+2] = -1500; gpos[i*3] = (Math.random()-0.5)*2000; }
+  }
+  goldParticles.geometry.attributes.position.needsUpdate = true;
 
-        // === 4. LOOP DI ANIMAZIONE 3D ===
-        function animate() {
-            requestAnimationFrame(animate);
+  particles.rotation.z += 0.001 + (mouseX*0.00001);
+  renderer.render(scene, camera);
+}
+animate();
 
-            // Effetto Parallasse fluido (La telecamera segue il mouse con inerzia)
-            targetX = mouseX * 0.5;
-            targetY = mouseY * 0.5;
-            camera.position.x += (targetX - camera.position.x) * 0.05;
-            camera.position.y += (-targetY - camera.position.y) * 0.05;
-            camera.lookAt(scene.position);
+/* ============ HERO REVEAL ============ */
+let bootDone = false;
+function revealHero(){
+  bootDone = true;
+  const tl = gsap.timeline();
+  tl.to('.corner-mark', {opacity:1, duration:1})
+    .to('.corner-nav', {opacity:1, duration:1}, "-=.8")
+    .to('.eyebrow', {opacity:1, duration:1.2, ease:'power2.out'}, "-=.6")
+    .to('.title', {opacity:1, y:0, duration:2.2, ease:'power4.out'}, "-=.8")
+    .to('.subtitle', {opacity:1, y:0, duration:1.8, ease:'power3.out'}, "-=1.4")
+    .to('.drivers', {opacity:1, duration:1.8, ease:'power2.out'}, "-=1")
+    .to('.cta', {opacity:1, duration:1.4, ease:'power2.out'}, "-=1")
+    .set('.cta', {pointerEvents:'auto'});
+}
 
-            // Anima le particelle verso lo schermo
-            const positions = particles.geometry.attributes.position.array;
-            for (let i = 0; i < particleCount; i++) {
-                // Muove la particella sull'asse Z
-                positions[i * 3 + 2] += velocities[i].z;
+/* ============ HYPERSPACE TRANSITION ============ */
+let transitioning = false;
 
-                // Se la particella supera la telecamera, rinasce in fondo al tunnel
-                if (positions[i * 3 + 2] > 500) {
-                    positions[i * 3 + 2] = -1500;
-                    // Variazione leggera su X e Y per simulare turbolenza
-                    positions[i * 3] = (Math.random() - 0.5) * 2000;
-                }
-            }
-            particles.geometry.attributes.position.needsUpdate = true;
+function playTransition(dest){
+  if(transitioning) return;
+  transitioning = true;
 
-            // Torsione del tunnel legata al mouse per simulare la forza G in curva
-            particles.rotation.z += 0.001 + (mouseX * 0.00001);
+  const tl = gsap.timeline({onComplete: ()=> window.location.href = dest});
 
-            renderer.render(scene, camera);
-        }
-        
-        animate();
+  // camera + tunnel warp
+  tl.to({}, {duration:.1})
+    .call(()=>{ container.style.filter = 'blur(0px)'; })
+    .to({}, {
+      duration:.9,
+      onUpdate:function(){
+        warp = 1 + (this.progress()*this.progress())*55;
+        camera.fov = 75 + this.progress()*55;
+        camera.updateProjectionMatrix();
+        container.style.filter = `blur(${this.progress()*6}px) brightness(${1+this.progress()*1.4})`;
+      }
+    }, 0)
+    // car silhouette streak
+    .to('#carRig', {opacity:1, duration:.05}, .18)
+    .to('#carRig', {
+      left:'150%', duration:.5, ease:'power2.in',
+      onStart:()=>{ gsap.set('#carRig', {left:'-40%'}); }
+    }, .18)
+    .fromTo('#trail', {width:'0%', opacity:1}, {width:'160%', duration:.55, ease:'power2.in'}, .18)
+    .to('#carRig', {opacity:0, duration:.15}, .62)
+    // flash + blackout
+    .to('#flash', {opacity:1, duration:.09}, .58)
+    .to('#flash', {opacity:0, duration:.25}, .68)
+    .to('#blackout', {opacity:1, duration:.4}, .62)
+    .set('#transition-overlay', {opacity:1}, 0);
+}
 
-        // === 5. REGIA CINEMATOGRAFICA (GSAP) ===
-        // Fa apparire i testi come nei trailer cinematografici
-        window.onload = () => {
-            const tl = gsap.timeline();
-            
-            tl.to('.title', {
-                opacity: 1,
-                y: 0,
-                duration: 2.5,
-                ease: "power4.out",
-                delay: 0.5
-            })
-            .to('.subtitle', {
-                opacity: 1,
-                y: 0,
-                duration: 2,
-                ease: "power3.out"
-            }, "-=1.5")
-            .to('.drivers', {
-                opacity: 1,
-                duration: 2,
-                ease: "power2.out"
-            }, "-=1");
-        };
-    </script>
+document.body.addEventListener('click', (e)=>{
+  if(!bootDone) return;
+  const link = e.target.closest('a[data-dest]');
+  const dest = link ? link.getAttribute('data-dest') : 'leggenda.html';
+  e.preventDefault();
+  playTransition(dest);
+});
+</script>
 </body>
 </html>
